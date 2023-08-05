@@ -1,12 +1,12 @@
 const epic = require('./epicstore/EpicGamesApi');
-const { EGS_URL } = require('./utils/constants');
 
 const getGames = async () => {
-	const freeGames = await epic.getFreeGames();
+    const games = [];
+    const freeGames = await epic.getFreeGames();
 
-	for (g of freeGames) {
-		console.log(g.game);
-	}
+    return freeGames;
 };
 
-getGames();
+const returnGame = async () => console.log(await getGames());
+
+returnGame();

@@ -1,83 +1,54 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const dotenv = require('dotenv');
-const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
-
-const epic = require('./epicstore/EpicGamesApi');
+const { Client, Collection, GatewayIntentBits } = require('discord.js');
 
 dotenv.config();
 
 const client = new Client({
-	intents: [
-		GatewayIntentBits.Guilds,
-		GatewayIntentBits.GuildMessages,
-		//GatewayIntentBits.MessageContent,
-		//GatewayIntentBits.GuildMembers,
-		//GatewayIntentBits.GuildMessageReactions,
-	],
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        // GatewayIntentBits.MessageContent,
+        // GatewayIntentBits.GuildMembers,
+        // GatewayIntentBits.GuildMessageReactions,
+    ],
 });
-
-client.once(Events.ClientReady, (c) => {
-	console.log(`Ready, logged in as user ${c.user.tag}`);
-});
-
-// client.on(Events.MessageCreate, (e) => {
-// 	e.guild.channels.fetch('1132796020384878762').then((channel) => {
-// 		epic.getFreeGames().then((freeGames) => {
-// 			channel.send(`${freeGames}`);
-// 		});
-// 	});
-// });
-
-client.login(process.env.DISCORD_TOKEN);
 
 client.commands = new Collection();
 
 // Get all command files in the commands folder
 const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs
-	.readdirSync(commandsPath)
-	.filter((file) => file.endsWith('.js'));
+const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith('.js'));
 
 for (const file of commandFiles) {
-	const filePath = path.join(commandsPath, file);
-	const command = require(filePath);
+    const filePath = path.join(commandsPath, file);
+    const command = require(filePath);
 
-	if ('data' in command && 'execute' in command) {
-		client.commands.set(command.data.name, command);
-	} else {
-		console.log(
-			`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
-		);
-	}
+    if ('data' in command && 'execute' in command) {
+        client.commands.set(command.data.name, command);
+        console.log(`[INFO] Loaded command: ${file}`);
+    } else {
+        console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+    }
 }
 
-client.on(Events.InteractionCreate, async (interaction) => {
-	if (!interaction.isChatInputCommand()) return;
+const eventsPath = path.join(__dirname, 'events');
+const eventsFiles = fs.readdirSync(eventsPath).filter((file) => file.endsWith('.js'));
 
-	const command = interaction.client.commands.get(interaction.commandName);
+for (const file of eventsFiles) {
+    const filePath = path.join(eventsPath, file);
+    const event = require(filePath);
 
-	if (!command) {
-		console.log(
-			`No command matching ${interaction.commandName} was found.`
-		);
-		return;
-	}
+    if (event.once) {
+        client.once(event.name, (...args) => event.execute(...args));
+        console.log('[INFO] Loaded events');
+    } else {
+        client.on(event.name, (...args) => event.execute(...args));
+    }
+}
 
-	try {
-		await command.execute(interaction);
-	} catch (error) {
-		console.error(error);
-		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({
-				content: 'There was an error while executing this command!',
-				ephemeral: true,
-			});
-		} else {
-			await interaction.reply({
-				content: 'There was an error while executing this command!',
-				ephemeral: true,
-			});
-		}
-	}
-});
+// No token defined, quit
+if (!process.env.DISCORD_TOKEN) throw new Error('API Token not defined.');
+
+client.login(process.env.DISCORD_TOKEN);
