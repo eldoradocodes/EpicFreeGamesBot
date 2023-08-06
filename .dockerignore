@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+Dockerfile
+.git
+.gitignore
+.npmrc
+.env
+.eslintrc.json
+.prettierrc
+README.md
+test.js

@@ -4,6 +4,8 @@
   "description": "A discord bot that grabs the weekly free games",
   "main": "index.js",
   "scripts": {
+    "deploy": "node ./src/deploy-commands.js",
+    "start": "npm run deploy && node ./src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
